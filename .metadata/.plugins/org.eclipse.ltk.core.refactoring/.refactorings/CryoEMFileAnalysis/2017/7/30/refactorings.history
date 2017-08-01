@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename resource &apos;CryoEMFileAnalysis/stat_D3172&apos; to &apos;stat_D3172.txt&apos;" description="Rename resource &apos;stat_D3172&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="stat_D3172" name="stat_D3172.txt" stamp="1501033844788" updateReferences="true"/>
+</session>

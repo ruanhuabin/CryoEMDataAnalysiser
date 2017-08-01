@@ -1,0 +1,228 @@
+'''
+#coding:utf-8
+
+
+@author: ruanhuabin
+'''
+
+import os
+from operator import itemgetter
+from Logger import MyLogger
+import logging
+from datetime import datetime
+
+def getTimeGap(time1, time2):
+    FMT = '%Y-%m-%d-%H:%M:%S'
+    tdelta = datetime.strptime(time2, FMT) - datetime.strptime(time1, FMT)    
+    tdelta = str(tdelta)    
+    items = tdelta.split(',')
+    
+    if(len(items) > 1):    
+        return items
+    else:
+        return ['0 day', items[0]]
+
+
+def sizeof_fmt(num, suffix='B'):
+    for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
+        if abs(num) < 1024.0:
+            return "%3.1f%s%s" % (num, unit, suffix)
+        num /= 1024.0
+    return "%.1f%s%s" % (num, 'Yi', suffix)
+
+
+def convert_unit(fileTypeTotalSize):
+    
+    newFileTypeTotalSize = {}
+    for (key, value) in fileTypeTotalSize.iteritems():
+        nv = sizeof_fmt(value)
+        newFileTypeTotalSize[key] = nv
+        
+
+    return newFileTypeTotalSize
+
+
+def print_file_analysis_result(fileTypeTotalSize, fileTypeSize, logger):
+         
+    items = fileTypeTotalSize.items()    
+    #print "before sort, items = {0}".format(items)
+    #newItems = sorted(items,key=lambda x:x[1], reverse=True)
+    items.sort(key=lambda x:x[1], reverse=True)    
+    #print "items = {0}".format(items)
+    
+    newItems = []
+    for item in items:
+        newItem = (item[0], sizeof_fmt(item[1]))
+        newItems.append(newItem)        
+        print "{0} : {1}, {2}".format(newItem[0], newItem[1], len(fileTypeSize[newItem[0]]))        
+    
+        
+def analysis_file_size_info(filename):
+    
+    logger = MyLogger("File-Size-Logger", logging.INFO).getLogger()
+    logger.info("Start to analysis_file_size_info")
+    lineNum = 0
+    
+    
+    totalSize = 0
+    fileTypeSize = {}
+    fileTypeTotalSize = {}
+    
+    with open(filename) as f:
+        for line in f:    
+            lineNum = lineNum + 1
+            items = line.split()      
+            #(fileSize, filePath) = line.split()
+            fileSize = int(items[0])
+            filePath = items[1]         
+            
+            (name, ext) = os.path.splitext(filePath)
+            totalSize  = totalSize + fileSize
+            
+            if(fileTypeSize.has_key(ext)):
+                fileTypeSize[ext].append(fileSize)
+            else:
+                fileTypeSize[ext] = [fileSize]
+            
+            if(fileTypeTotalSize.has_key(ext)):
+                fileTypeTotalSize[ext] = fileTypeTotalSize[ext] + fileSize
+            else:
+                fileTypeTotalSize[ext] = fileSize
+                
+                
+            
+            if(lineNum % 100000 == 0):
+                logger.info("{0} lines is finished".format(lineNum))
+                
+            
+    logger.info("{0} lines is finished".format(lineNum))
+    
+    
+    logger.info( "File Total Size = {0}".format(sizeof_fmt(totalSize)))
+    #print "fileTypeSize = {0}".format(fileTypeSize)
+    #print "fileTypeTotalSize = {0}".format(fileTypeTotalSize)
+    #print "newFileTypeTotalSize = {0}".format(newFileTypeTotalSize)
+    print_file_analysis_result(fileTypeTotalSize, fileTypeSize, logger)
+    
+
+def addToDict(dictData, item):
+    k = item[0]
+    v = item[1]
+    
+    if(dictData.has_key(k)):
+        dictData[k].append(v)
+    else:
+        dictData[k] = [v]
+
+
+    
+def analysis_time_info(ftGapDetail):
+
+    tmGapTable = ["000-030", "030-060", "060-090", "090-120", "120-150", "150-180", "180-210", "210-240", "240-270", "270-300", "300-330", "330-360", 
+                  "360-390", "390-420", "420-450", "450-480", "480-510", "510-540", "540-570", "570-600", "600-630", "630-660", "660-690", "690-720", "720-"]    
+    ftGapNew = {}
+    for(k,v) in ftGapDetail.iteritems():
+        ext = k;
+        #print("key = {}, value = {}".format(k,v))
+        for vv in v:
+            #print("value = {}".format(vv))
+            dayGap = vv.split(' ')[0]
+            dayGap = int(dayGap)
+        
+            addToDict(ftGapNew, (ext, dayGap))
+    
+    
+    
+    #print("ftGapNew = {0}".format(ftGapNew));
+    #for(k,v) in ftGapNew.iteritems():
+    #    print("key = {}, vlen = {}".format(k, len(v)))
+    
+    tmGapPeriod = {}
+    tmGapMaxIndex = len(tmGapTable)
+    for(k,v) in ftGapNew.iteritems():
+
+        for vv in v:
+            tmIndex = vv / 30
+            
+            if(tmIndex > tmGapMaxIndex):
+                tmIndex = tmGapMaxIndex
+            
+            
+            newKey = k + "(" + tmGapTable[tmIndex] + ")"
+            if(tmGapPeriod.has_key(newKey)):
+                tmGapPeriod[newKey] = tmGapPeriod[newKey] + 1
+            else:
+                tmGapPeriod[newKey] =  1
+                
+            
+    
+    return (ftGapNew, tmGapPeriod)
+    #print("tmGapPeriod = {}".format(tmGapPeriod))        
+            
+            
+            
+        
+def analysis_file_time_info(filename,baseTime):
+    logger = MyLogger("File-Time-Logger", logging.INFO).getLogger()
+    lineNum = 0
+    #ftGap = {}
+    ftGapDetail = {}
+    with open(filename) as f:
+        for line in f: 
+            lineNum = lineNum + 1
+            items = line.split('#')
+            #print "items = {}".format(items)
+            fileLastAccessTime = items[1]
+            fname = items[3]
+            
+            timeGap = getTimeGap(fileLastAccessTime, baseTime)
+            
+#             if(timeGap[0] == '18:49:19'):
+#                 print("fileAccessTime = {},timeGap = {}, items = {}".format(fileLastAccessTime, timeGap,items))
+#                 exit()
+            #ftGap[fname] = str(timeGap)
+            
+            (name, ext) = os.path.splitext(fname)
+            
+            if(len(ext) > 0 and ext[-1] == '\n'):
+                ext = ext[:-1]
+            if(ftGapDetail.has_key(ext)):                
+                ftGapDetail[ext].append(timeGap[0])
+            else:
+                ftGapDetail[ext] = [timeGap[0]]
+            
+            
+            if(lineNum % 100000 == 0):
+                logger.info("{0} lines is finished".format(lineNum))
+                
+            
+    logger.info("{0} lines is finished".format(lineNum))
+            
+    
+    #logger.info("ftGap = {0}".format(ftGap))
+    #logger.info("ftGapDetail = {0}".format(ftGapDetail['.mrc']))
+    (ftGapNew, tmGapPeriod) = analysis_time_info(ftGapDetail)
+    #print("tmGapPeriod = {}".format(tmGapPeriod))
+    
+    tmGapPeriodList = tmGapPeriod.iteritems()
+    newPeriodList = sorted(tmGapPeriodList, key=lambda x:x[0])
+    #for(k,v) in tmGapPeriod.iteritems():
+    for item in newPeriodList:
+        print("{} ----> {}".format(item[0], item[1]))
+
+    print("-----------------------------------------------\n")
+    for(k,v) in ftGapNew.iteritems():
+        print("{} ----> {}".format(k,len(v)))
+
+
+myTimeGap = getTimeGap("2017-07-19-17:10:41", "2017-07-20-12:00:00" )
+print("timeGap = {}".format(myTimeGap))
+
+#analysis_file_time_info("fileTimeInfoALL_clean.txt", "2017-07-20-12:00:00")
+#analysis_file_time_info("fileTimeInfo1000.txt", "2017-07-20-12:00:00")
+
+#analysis_file_size_info("stat_D3172.txt")
+#analysis_file_size_info("stat_2760000.txt")
+#analysis_file_size_info("stat_1430000.txt")
+#analysis_file_size_info("stat_500000.txt")
+#analysis_file_size_info("stat.txt")

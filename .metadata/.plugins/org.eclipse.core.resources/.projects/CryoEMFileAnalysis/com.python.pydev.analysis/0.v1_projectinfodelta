@@ -1,0 +1,12 @@
+INSTUPFileAnalysis
+D:\workspace2\CryoEMFileAnalysis\FileAnalysis.py
+INFOS:&&2|1|2|0&&2|3|2|0&&2|4|2|0&&2|5|2|0&&2|6|2|0&&2|7|2|0&&2|8|2|0&&2|9|2|0
+analysis_file_time_info=9
+analysis_file_size_info=6
+analysis_time_info=8
+addToDict=7
+convert_unit=4
+print_file_analysis_result=5
+getTimeGap=1
+FileAnalysis=2
+sizeof_fmt=3

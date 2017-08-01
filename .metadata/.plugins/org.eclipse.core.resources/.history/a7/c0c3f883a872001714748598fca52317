@@ -1,0 +1,18 @@
+'''
+@author: ruanhuabin
+'''
+
+from datetime import datetime
+s1 = '2016-08-03 20:15:28'
+s2 = '2017-07-25 15:46:38' # for example
+FMT = '%Y-%m-%d %H:%M:%S'
+tdelta = datetime.strptime(s2, FMT) - datetime.strptime(s1, FMT)
+
+import os.path
+import sys
+with open("a.txt") as f:    
+        for line in f:
+            #print("line = {0}".format(line))
+            if(not os.path.isfile(line)):
+                print("file {0} is not exist".format(line))
+
